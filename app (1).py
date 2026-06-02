@@ -14,33 +14,27 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(BASE, "models"))
 sys.path.insert(0, os.path.join(BASE, "data"))
 
-DATA_PATH  = os.path.join(BASE, "data", "precincts.csv")
-MODEL_PATH = os.path.join(BASE, "models")
-
-# ── Bootstrap data + models ────────────────────────────────────────────────────
+# ── Bootstrap data + models — fully in-memory, no disk writes ─────────────────
 @st.cache_data
 def load_data():
-    if not os.path.exists(DATA_PATH):
-        from generate_data import generate_precincts, compute_features
-        df = generate_precincts()
-        df = compute_features(df)
-        df.to_csv(DATA_PATH, index=False)
-    return pd.read_csv(DATA_PATH)
+    # Use pregenerated CSV if it was committed to the repo, else generate in memory
+    data_path = os.path.join(BASE, "data", "precincts.csv")
+    if os.path.exists(data_path):
+        return pd.read_csv(data_path)
+    from generate_data import generate_precincts, compute_features
+    df = generate_precincts()
+    df = compute_features(df)
+    return df  # never written to disk
 
 @st.cache_resource
-def load_models(df):
-    from predictor import train_models, save_models, load_models as _load
-    mf = os.path.join(MODEL_PATH, "turnout_model.pkl")
-    if not os.path.exists(mf):
-        tm, mm, metrics, _, _ = train_models(df)
-        save_models(tm, mm, MODEL_PATH)
-    else:
-        tm, mm = _load(MODEL_PATH)
-        _, _, metrics, _, _ = train_models(df)
+def load_models(_df):
+    # Always train in memory — avoids any pickle file writes on read-only filesystems
+    from predictor import train_models
+    tm, mm, metrics, _, _ = train_models(_df)
     return tm, mm, metrics
 
 df = load_data()
-tm, mm, metrics = load_models(df)
+tm, mm, metrics = load_models(df)  # underscore arg name tells Streamlit not to hash the df
 
 COUNTIES   = sorted(df["county"].unique().tolist())
 PTYPES     = sorted(df["precinct_type"].unique().tolist())
