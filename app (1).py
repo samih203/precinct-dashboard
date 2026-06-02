@@ -1,5 +1,5 @@
 """
-Central Florida Precinct Intelligence Dashboard — Streamlit version
+BallotBase — Central Florida Precinct Intelligence
 Run: streamlit run app.py
 """
 
@@ -75,8 +75,8 @@ def party_label(m):
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Central Florida Precinct Dashboard",
-    page_icon="🗺️",
+    page_title="BallotBase",
+    page_icon="🗳️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -101,8 +101,8 @@ st.markdown("""
 # ── Header ─────────────────────────────────────────────────────────────────────
 col_h1, col_h2 = st.columns([3, 1])
 with col_h1:
-    st.markdown("# 🗺️ Central Florida Precinct Intelligence")
-    st.markdown("<p style='color:#64748b;margin-top:-12px'>Congressional District Analysis · Turnout Modeling · Margin Prediction</p>", unsafe_allow_html=True)
+    st.markdown("# 🗳️ BallotBase")
+    st.markdown("<p style='color:#64748b;margin-top:-12px'>Central Florida · Congressional District Analysis · Turnout Modeling · Margin Prediction</p>", unsafe_allow_html=True)
 with col_h2:
     st.markdown(f"""
     <div style='text-align:right;padding-top:8px'>
@@ -129,14 +129,14 @@ with tab1:
 
     year = sb.selectbox("Election Year", ELECTIONS, index=4)
     metric = sb.selectbox("Color By", {
-        "margin": "D/R Margin",
+        "margin": "Party Margin (D vs R)",
         "turnout": "Turnout %",
-        "dem_share": "Dem Vote Share",
+        "dem_share": "Party Vote Share",
         "votes_cast": "Votes Cast",
     }.keys(), format_func=lambda x: {
-        "margin": "D/R Margin",
+        "margin": "Party Margin (D vs R)",
         "turnout": "Turnout %",
-        "dem_share": "Dem Vote Share",
+        "dem_share": "Party Vote Share",
         "votes_cast": "Votes Cast",
     }[x])
 
@@ -190,7 +190,7 @@ with tab1:
         zoom=8.2,
         center={"lat": 28.55, "lon": -81.20},
         opacity=0.85,
-        labels={"_label": metric.replace("_"," ").title(), "_party": "Rating"},
+        labels={"_label": metric.replace("_"," ").title(), "_party": "Rating", "dem_share": "Party Vote Share"},
     )
     fig_map.update_layout(
         paper_bgcolor="#0f172a",
@@ -242,7 +242,7 @@ with tab2:
     st.markdown("### Scenario Controls")
     pc1, pc2, pc3 = st.columns(3)
     nat_env   = pc1.slider("National Environment Shift (pp)", -10, 10, 0, 1,
-                            help="+3 = Dem wave, -3 = Rep wave")
+                            help="+3 = Democratic wave, -3 = Republican wave — shifts predicted margins district-wide")
     gotv      = pc2.slider("GOTV / Ground Game Boost (pp turnout)", 0, 10, 0, 1,
                             help="Simulates canvassing impact")
     pred_cnty = pc3.selectbox("Target County", ["All"] + COUNTIES)
@@ -265,8 +265,8 @@ with tab2:
 
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Predicted Total Votes", f"{total_votes:,}")
-    m2.metric("Predicted Dem Margin", f"{overall:+.1%}",
-              delta=f"{nat_env:+d}pp env" if nat_env else None)
+    m2.metric("Predicted Margin (D–R)", f"{overall:+.1%}",
+              delta=f"{nat_env:+d}pp env shift" if nat_env else None)
     m3.metric("Avg Predicted Turnout", f"{merged['pred_turnout'].mean():.1%}",
               delta=f"+{gotv}pp GOTV" if gotv else None)
     m4.metric("Precincts Modeled", str(len(merged)))
@@ -281,8 +281,8 @@ with tab2:
             hover_name="precinct_name",
             hover_data={"pred_turnout":":.1%","pred_margin":":.1%","pred_votes_cast":":,"},
             color_discrete_sequence=COUNTY_COLORS,
-            title="Predicted Turnout vs. Margin",
-            labels={"pred_turnout":"Predicted Turnout","pred_margin":"Predicted Margin"},
+            title="Predicted Turnout vs. Margin (D–R)",
+            labels={"pred_turnout":"Predicted Turnout","pred_margin":"Predicted Margin (D–R)"},
             height=420,
         )
         fig_scatter.add_hline(y=0, line_dash="dash", line_color="#475569",
@@ -308,7 +308,7 @@ with tab2:
 
     # Priority table
     st.markdown("### 🎯 High-Priority Precincts")
-    st.caption("Competitive precincts (±10pp margin) with most registered voters — best targets for canvassing")
+    st.caption("Competitive precincts (±10pp margin) with most registered voters — highest-value targets for any campaign's ground game")
     priority = merged[merged["pred_margin"].abs() < 0.10].copy()
     priority = priority.sort_values("registered_voters", ascending=False).head(25)
     priority["Rating"] = priority["pred_margin"].apply(party_label)
@@ -367,7 +367,7 @@ with tab3:
 
     with col2:
         fig2 = px.line(tdf, x="Year", y="Avg Margin", color="County",
-                        markers=True, title="Average Dem Margin by County",
+                        markers=True, title="Average Party Margin by County (D–R)",
                         color_discrete_map=cmap, height=340)
         fig2.add_hline(y=0, line_dash="dash", line_color="#475569")
         fig2.update_yaxes(tickformat="+.0%")
@@ -396,7 +396,7 @@ with tab3:
             orientation="h",
             marker_color=["#3b82f6" if v > 0 else "#ef4444" for v in swing["swing"]],
         ))
-        fig4.update_layout(title="Dem Swing by Type (2020→2024)", height=340)
+        fig4.update_layout(title="Party Margin Swing by Precinct Type (2020→2024)", height=340)
         fig4.update_xaxes(tickformat="+.0%")
         styled(fig4)
         st.plotly_chart(fig4, use_container_width=True)
@@ -417,7 +417,7 @@ with tab4:
     s1,s2,s3,s4 = st.columns(4)
     s1.metric("Total Registered Voters", f"{total_reg:,}", f"{len(df)} precincts")
     s2.metric("2024 Avg Turnout",  f"{avg_turnout:.1%}")
-    s3.metric("2024 Avg Margin",   f"{avg_margin:+.1%}")
+    s3.metric("2024 Avg Margin (D–R)", f"{avg_margin:+.1%}")
     s4.metric("Tossup Precincts",  str(n_tossup), f"Safe D: {n_safe_d} · Safe R: {n_safe_r}")
 
     st.markdown("---")
@@ -428,9 +428,10 @@ with tab4:
         Turnout=("2024_turnout","mean"),
         Margin=("2024_margin","mean"),
     ).reset_index().rename(columns={"county":"County"})
-    county_tbl["Voters"]  = county_tbl["Voters"].apply(lambda x: f"{int(x):,}")
-    county_tbl["Turnout"] = county_tbl["Turnout"].apply(lambda x: f"{x:.1%}")
-    county_tbl["Margin"]  = county_tbl["Margin"].apply(lambda x: f"{x:+.1%}")
+    county_tbl["Voters"]       = county_tbl["Voters"].apply(lambda x: f"{int(x):,}")
+    county_tbl["Turnout"]      = county_tbl["Turnout"].apply(lambda x: f"{x:.1%}")
+    county_tbl["Margin (D–R)"] = county_tbl["Margin"].apply(lambda x: f"{x:+.1%}")
+    county_tbl = county_tbl.drop(columns=["Margin"])
     st.dataframe(county_tbl, hide_index=True, use_container_width=True)
 
     st.markdown("---")
