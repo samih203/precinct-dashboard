@@ -301,11 +301,9 @@ with tab2:
             x=by_type["avg_turnout"], y=by_type["precinct_type"],
             orientation="h", name="Turnout", marker_color="#10b981",
         ))
-        fig_type.update_layout(
-            title="Avg Turnout by Precinct Type",
-            xaxis=dict(tickformat=".0%"),
-            height=420, **THEME,
-        )
+        fig_type.update_layout(title="Avg Turnout by Precinct Type", height=420)
+        fig_type.update_xaxes(tickformat=".0%")
+        styled(fig_type)
         st.plotly_chart(fig_type, use_container_width=True)
 
     # Priority table
@@ -398,8 +396,9 @@ with tab3:
             orientation="h",
             marker_color=["#3b82f6" if v > 0 else "#ef4444" for v in swing["swing"]],
         ))
-        fig4.update_layout(title="Dem Swing by Type (2020→2024)",
-                            xaxis=dict(tickformat="+.0%"), height=340, **THEME)
+        fig4.update_layout(title="Dem Swing by Type (2020→2024)", height=340)
+        fig4.update_xaxes(tickformat="+.0%")
+        styled(fig4)
         st.plotly_chart(fig4, use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -451,8 +450,9 @@ with tab4:
                                   y=reg_bal["pct_dem_registered"], marker_color="#3b82f6"))
         fig_reg.add_trace(go.Bar(name="Rep", x=reg_bal["county"],
                                   y=reg_bal["pct_rep_registered"], marker_color="#ef4444"))
-        fig_reg.update_layout(title="Party Registration by County", barmode="group",
-                               yaxis=dict(tickformat=".0%"), height=360, **THEME)
+        fig_reg.update_layout(title="Party Registration by County", barmode="group", height=360)
+        fig_reg.update_yaxes(tickformat=".0%")
+        styled(fig_reg)
         st.plotly_chart(fig_reg, use_container_width=True)
 
     st.markdown("---")
