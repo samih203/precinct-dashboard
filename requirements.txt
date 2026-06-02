@@ -1,7 +1,6 @@
-dash
-dash-bootstrap-components
+streamlit
 plotly
 pandas
 scikit-learn
+numpy
 geopandas
-gunicorn
